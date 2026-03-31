@@ -1,0 +1,97 @@
+---
+title: Sandbox & Testing
+description: Test your integration with simulated endpoints and test API keys.
+---
+
+Allawee provides a complete sandbox environment for testing your integration before going live.
+
+## Test API Keys
+
+Generate test API keys from the dashboard in test mode. Test keys start with `sk.test.` and can only interact with the sandbox environment.
+
+```bash
+curl https://api.allawee.com/accounts \
+  -H "Authorization: Bearer sk.test.xxxxx"
+```
+
+## Making Test Calls
+
+Use your test token as a Bearer token in the `Authorization` header, exactly as you would with a live key. All sandbox responses mirror the production API format.
+
+---
+
+## Simulation Endpoints
+
+Simulation endpoints let you trigger events that would normally come from external systems (card networks, banks, etc.).
+
+### Simulate Card Program Go-Live
+
+```http
+POST /simulation/card-programs/:id/go-live
+```
+
+Simulate a card program transitioning to live status. In production, this happens after approval.
+
+---
+
+### Simulate Card Authorization Check
+
+```http
+POST /simulation/cards/:id/request-authorization/check
+```
+
+Simulate an authorization check request from the card network.
+
+---
+
+### Simulate Card Authorization Capture
+
+```http
+POST /simulation/cards/:id/request-authorization/capture
+```
+
+Simulate a capture (settlement) of an authorized transaction.
+
+---
+
+### Simulate Capture Update
+
+```http
+POST /simulation/cards/:id/request-authorization/update-capture
+```
+
+Simulate an update to a previously captured transaction (e.g., partial capture adjustment).
+
+---
+
+### Simulate Reverse Capture
+
+```http
+POST /simulation/cards/:id/request-authorization/reverse-capture
+```
+
+Simulate a reversal of a captured transaction.
+
+---
+
+### Simulate Bank Transfer Receipt
+
+```http
+POST /simulation/payments/pay-in
+```
+
+Simulate receiving an inbound bank transfer to one of your accounts.
+
+---
+
+### Simulate GRP Card Operations
+
+Test Guaranteed Request Processing for card operations:
+
+```http
+POST /simulation/grp/cards           # GRP card creation
+POST /simulation/grp/cards/link      # GRP card link via PAN
+POST /simulation/grp/cards/:id/link  # GRP card link via ID
+POST /simulation/grp/cards/:id/block   # GRP block card
+POST /simulation/grp/cards/:id/unblock # GRP unblock card
+```

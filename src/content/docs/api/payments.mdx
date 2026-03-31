@@ -1,0 +1,124 @@
+---
+title: Payments
+description: Send bank transfers, pay bills, and manage outward payments.
+---
+
+Payments represent outward money movement — sending bank transfers or paying bills. Each payment tracks its lifecycle from initiation to completion.
+
+---
+
+## Create Payout (Bank Transfer)
+
+```http
+POST /payments/payout
+```
+
+### Request Body
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `method` | string | ✓ | `bank-transfer`, `transfer`, `fx-transfer`, `local-transfer` |
+| `options` | object | ✓ | Payment destination details |
+| `currency` | string | ✓ | Payment currency |
+| `amount` | number | ✓ | Amount in minor units (kobo/cents) |
+| `customer` | string | | Customer ID |
+| `reference` | string | | Your unique reference |
+| `fee` | string | | Fee ID to apply |
+| `debitSource` | string | | Account to debit |
+| `metadata` | object | | Custom key-value data |
+
+### Payment Options
+
+| Field | Type | Description |
+|---|---|---|
+| `accountNumber` | string | Recipient account number |
+| `bankCode` | string | Recipient bank code |
+| `narration` | string | Transfer narration |
+| `note` | string | Internal note |
+| `destination` | string | Destination identifier |
+| `fxCurrency` | string | FX destination currency |
+| `fxQuoteHash` | string | FX quote hash |
+
+### Example Request
+
+```json
+{
+  "method": "bank-transfer",
+  "options": {
+    "accountNumber": "0123456789",
+    "bankCode": "058",
+    "narration": "Vendor payment"
+  },
+  "currency": "NGN",
+  "amount": 5000000,
+  "debitSource": "act_xxxxx",
+  "reference": "pmt-ref-001"
+}
+```
+
+---
+
+## Create Bill Payment
+
+```http
+POST /payments/bill
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `product` | string | ✓ | Bill product code |
+| `inputs` | object | ✓ | Product-specific inputs (phone, amount, etc.) |
+| `customer` | string | | Customer ID |
+| `reference` | string | | Your unique reference |
+| `debitSource` | string | | Account to debit |
+| `metadata` | object | | Custom data |
+
+---
+
+## Validate Bill Payment
+
+```http
+POST /payments/bill/validate
+```
+
+Validate a bill payment before executing it. Uses the same request body as bill creation.
+
+---
+
+## List Payments
+
+```http
+GET /payments
+```
+
+Standard [pagination, filtering, and sorting](/getting-started/#pagination) parameters apply. Responses include fee breakdown details.
+
+---
+
+## Get Payment
+
+```http
+GET /payments/:id
+```
+
+Returns a single payment by ID with full transaction details.
+
+---
+
+## Requeue Payment
+
+```http
+POST /payments/:id/requeue
+```
+
+Requeue a failed payment for retry.
+
+---
+
+## Resend Payment Event
+
+```http
+POST /payments/:id/resend-events/payment-completed
+```
+
+Resend the `payment-completed` webhook event for a payment.

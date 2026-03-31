@@ -1,0 +1,133 @@
+---
+title: Card Programs
+description: Configure and manage card programs for physical and virtual card issuance.
+---
+
+A card program is a set of configurations that define how cards are issued, funded, and authorized. You need at least one card program before you can issue cards.
+
+- **Physical card programs** require approval before going live.
+- **Virtual card programs** go live immediately upon creation.
+
+---
+
+## Create Card Program
+
+```http
+POST /card-programs
+```
+
+### Physical Card Program
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | ✓ | Program name |
+| `description` | string | | Program description |
+| `network` | string | ✓ | `verve` or `mastercard` |
+| `type` | string | ✓ | `physical` |
+| `quantity` | number | | Number of cards to produce |
+| `currency` | string | ✓ | Card currency |
+| `distribution` | object | | Distribution configuration |
+| `personalization` | object | | Card personalization options |
+| `authorization` | object | | Authorization settings |
+
+#### Distribution
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | string | `bulked` or `individually` |
+| `shippingAddress` | object | Delivery address |
+| `returnAddress` | object | Return address |
+
+#### Personalization
+
+| Field | Type | Description |
+|---|---|---|
+| `frontArtworkFile` | string | Card front artwork file |
+| `printCardholderName` | boolean | Print cardholder name on card |
+| `defaultCardholderName` | string | Default name if not personalized |
+
+#### Authorization
+
+| Field | Type | Description |
+|---|---|---|
+| `fundingSourceType` | string | Funding source type |
+| `settlementAccount` | string | Settlement account ID |
+| `transactionFee` | string | Fee ID for transactions |
+| `webhook` | string | Authorization webhook URL |
+| `timeoutDefault` | string | Default timeout behavior |
+
+### Virtual Card Program
+
+Virtual programs use a simpler configuration and go live immediately.
+
+```json
+{
+  "name": "Virtual USD Cards",
+  "network": "mastercard",
+  "type": "virtual",
+  "currency": "USD",
+  "authorization": {
+    "fundingSourceType": "prefunded",
+    "settlementAccount": "act_xxxxx",
+    "webhook": "https://your-server.com/webhook/auth"
+  }
+}
+```
+
+---
+
+## List Card Programs
+
+```http
+GET /card-programs
+```
+
+Standard [pagination](/getting-started/#pagination) parameters apply.
+
+---
+
+## Get Card Program
+
+```http
+GET /card-programs/:id
+```
+
+---
+
+## Update Card Program
+
+```http
+PUT /card-programs/:id
+```
+
+Accepts the same fields as creation. Cannot update after program has been approved.
+
+---
+
+## Update Card Program Draft
+
+```http
+PUT /card-programs/:id/draft
+```
+
+Update a card program that is still in draft status.
+
+---
+
+## Request Approval
+
+```http
+POST /card-programs/:id/request-approval
+```
+
+Submit a physical card program for approval. Virtual programs do not require approval.
+
+---
+
+## Delete Card Program
+
+```http
+DELETE /card-programs/:id
+```
+
+Delete a card program. Only programs that have not been approved can be deleted.

@@ -1,0 +1,125 @@
+---
+title: Webhooks
+description: Create, manage, and configure webhook endpoints for real-time event delivery.
+---
+
+Webhooks deliver real-time notifications to your server when events occur in your Allawee account. Configure endpoints that subscribe to specific event types.
+
+---
+
+## Create Webhook
+
+```http
+POST /webhooks
+```
+
+### Request Body
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | ✓ | Webhook name |
+| `events` | array | ✓ | Array of event types to subscribe to |
+| `url` | string | ✓ | Delivery URL |
+| `apiVersion` | string | | API version for payload format |
+| `description` | string | | Webhook description |
+| `signingKey` | string | | Custom signing key for verification |
+| `metadata` | object | | Custom key-value data |
+
+### Example Request
+
+```json
+{
+  "name": "Card Events",
+  "events": [
+    "card.created",
+    "card.authorization.request",
+    "card.transaction.completed"
+  ],
+  "url": "https://your-server.com/webhooks/allawee",
+  "description": "Receives all card-related events"
+}
+```
+
+---
+
+## List Webhooks
+
+```http
+GET /webhooks
+```
+
+Standard [pagination](/getting-started/#pagination) parameters apply.
+
+---
+
+## Get Webhook
+
+```http
+GET /webhooks/:id
+```
+
+Returns a single webhook by ID.
+
+---
+
+## Update Webhook
+
+```http
+PUT /webhooks/:id
+```
+
+Update webhook configuration. All fields from creation are accepted except `signingKey`.
+
+---
+
+## Delete Webhook
+
+```http
+DELETE /webhooks/:id
+```
+
+Permanently delete a webhook endpoint.
+
+---
+
+## Enable Webhook
+
+```http
+POST /webhooks/:id/enable
+```
+
+Enable a disabled webhook to resume receiving events.
+
+---
+
+## Disable Webhook
+
+```http
+POST /webhooks/:id/disable
+```
+
+Temporarily disable a webhook. Events will be queued and can be retried later.
+
+---
+
+## Get Signing Secret
+
+```http
+GET /webhooks/:id/secret
+```
+
+Retrieve the signing secret for verifying webhook payloads.
+
+---
+
+## Roll Signing Secret
+
+```http
+POST /webhooks/:id/secret/roll
+```
+
+Generate a new signing secret. The old secret will stop working immediately.
+
+| Field | Type | Description |
+|---|---|---|
+| `signingKey` | string | New custom signing key (optional, auto-generated if omitted) |

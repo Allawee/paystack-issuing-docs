@@ -1,0 +1,53 @@
+---
+title: Card Transactions
+description: Query and export card transaction records.
+---
+
+Card transactions represent settled transactions on issued cards. Each transaction includes network data for reconciliation.
+
+---
+
+## List Card Transactions
+
+```http
+GET /card-transactions
+```
+
+Standard [pagination, filtering, and sorting](/getting-started/#pagination) parameters apply.
+
+### Response Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Transaction ID |
+| `card` | string | Card ID |
+| `amount` | number | Transaction amount |
+| `currency` | string | Currency |
+| `status` | string | Transaction status |
+| `networkData` | object | Network-level data |
+| `networkData.stan` | string | System Trace Audit Number |
+| `networkData.rrn` | string | Retrieval Reference Number |
+| `networkData.reference` | string | Network reference |
+| `networkData.terminalId` | string | Terminal ID |
+| `networkData.mcc` | string | Merchant Category Code |
+| `createdAt` | string | Timestamp |
+
+---
+
+## Download Transactions CSV
+
+```http
+GET /card-transactions/csv
+```
+
+Download all card transactions as a CSV file.
+
+---
+
+## Get Card Transaction
+
+```http
+GET /card-transactions/:id
+```
+
+Returns a single card transaction by ID.

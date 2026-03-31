@@ -1,0 +1,63 @@
+---
+title: Card Authorizations
+description: View and manage card authorization requests.
+---
+
+Card authorizations represent real-time transaction authorization requests. Each authorization contains network data including STAN, RRN, terminal ID, and merchant category code (MCC).
+
+---
+
+## List Card Authorizations
+
+```http
+GET /card-authorizations
+```
+
+Standard [pagination, filtering, and sorting](/getting-started/#pagination) parameters apply.
+
+### Response Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Authorization ID |
+| `card` | string | Card ID |
+| `amount` | number | Authorization amount |
+| `currency` | string | Currency |
+| `status` | string | Authorization status |
+| `networkData` | object | Network-level data |
+| `networkData.stan` | string | System Trace Audit Number |
+| `networkData.rrn` | string | Retrieval Reference Number |
+| `networkData.reference` | string | Network reference |
+| `networkData.terminalId` | string | Terminal ID |
+| `networkData.mcc` | string | Merchant Category Code |
+| `createdAt` | string | Timestamp |
+
+---
+
+## Download Authorizations CSV
+
+```http
+GET /card-authorizations/csv
+```
+
+Download all authorizations as a CSV file.
+
+---
+
+## Get Card Authorization
+
+```http
+GET /card-authorizations/:id
+```
+
+Returns a single authorization by ID.
+
+---
+
+## Early Refund Dispute
+
+```http
+POST /card-authorizations/:id/early-refund
+```
+
+Initiate an early refund/dispute for an authorization.

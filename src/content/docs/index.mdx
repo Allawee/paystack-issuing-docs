@@ -1,0 +1,24 @@
+---
+title: Paystack Issuing
+description: Complete API documentation for the Paystack Issuing platform.
+template: splash
+hero:
+  tagline: Build financial products with card issuing, accounts, payments, and more.
+  actions:
+    - text: Get Started
+      link: /getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: API Reference
+      link: /api/accounts/
+      icon: external
+---
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <LinkCard title="Accounts" href="/api/accounts/" description="Create and manage bank accounts — main, sub, and virtual — with deposit channels." />
+  <LinkCard title="Cards" href="/api/cards/" description="Issue physical and virtual cards, manage spending controls, and fund cards." />
+  <LinkCard title="Payments" href="/api/payments/" description="Send bank transfers, pay bills, and manage outward payment flows." />
+  <LinkCard title="Webhooks" href="/api/webhooks/" description="Subscribe to real-time events and manage webhook endpoints." />
+</CardGrid>

@@ -1,0 +1,59 @@
+---
+title: Banks
+description: Look up banks and resolve account numbers.
+---
+
+Utility endpoints for working with banks and bank accounts.
+
+---
+
+## List Banks
+
+```http
+GET /tools/banks
+```
+
+Returns the full list of supported banks with their codes.
+
+---
+
+## Get Likely Banks
+
+```http
+GET /tools/banks/short-list/:accountNumber
+```
+
+Returns a short list of likely banks for a given account number using CBN checksum validation. Useful for pre-selecting the bank in your UI.
+
+---
+
+## Resolve Bank Account
+
+```http
+GET /tools/banks/resolve
+```
+
+Resolve an account number to the account holder's name.
+
+### Query Parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `accountNumber` | string | ✓ | Bank account number |
+| `bankCode` | string | ✓ | Bank code |
+
+### Example Request
+
+```bash
+GET /tools/banks/resolve?accountNumber=0123456789&bankCode=058
+```
+
+### Example Response
+
+```json
+{
+  "accountName": "JOHN DOE",
+  "accountNumber": "0123456789",
+  "bankCode": "058"
+}
+```

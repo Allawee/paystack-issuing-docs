@@ -1,0 +1,50 @@
+---
+title: Getting Started
+description: Learn how to authenticate, paginate, filter, and interact with the Allawee API.
+---
+
+## Base URLs
+
+| Environment | URL |
+|---|---|
+| Standard operations | `https://api.allawee.com` |
+| Sensitive operations | `https://secure.allawee.com` |
+
+Sensitive operations include reading card secrets (PAN, CVV), activating cards, resetting PINs, and linking cards via PAN.
+
+## Authentication
+
+All API requests require a Bearer token in the `Authorization` header using your secret API key.
+
+```bash
+curl https://api.allawee.com/accounts \
+  -H "Authorization: Bearer sk.live.xxxxx"
+```
+
+API keys can be generated from the dashboard. Test mode keys start with `sk.test.` and live keys start with `sk.live.`.
+
+## Pagination
+
+List endpoints support pagination with the following query parameters:
+
+| Parameter | Type | Description |
+|---|---|---|
+| `page` | number | Page number (starts at 1) |
+| `limit` | number | Items per page |
+| `lastId` | string | Cursor-based pagination using last item ID |
+
+## Parameter Expansion
+
+Use the `expand` query parameter to include related objects in the response.
+
+```bash
+GET /cards?expand=customer,program
+```
+
+## Filtering, Sorting & Field Selection
+
+List endpoints support filtering (`filter`), sorting (`sort`), and field selection (`select`). See the [Pagination & Filtering guide](/guides/pagination-and-filtering/) for full syntax and examples.
+
+## Guaranteed Request Processing (GRP)
+
+When GRP is enabled on your API key, requests that encounter transient failures are queued and processed asynchronously instead of failing. See the [GRP guide](/guides/guaranteed-request-processing/) for setup, tracking, and integration details.

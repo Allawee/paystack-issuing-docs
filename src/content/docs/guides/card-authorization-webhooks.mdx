@@ -1,0 +1,798 @@
+---
+title: Card Authorization Webhooks
+description: Implement a webhook endpoint to handle real-time card authorization requests from Allawee.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+When a card is used at a merchant, Allawee processes the authorization request and sends it to your webhook for a decision. Your endpoint must respond within **2 seconds** with an `approve` or `decline` action — otherwise Allawee applies your card program's `timeoutDefault` response.
+
+## How It Works
+
+1. **Create a card program** with an `authorization.webhook` URL pointing to your server
+2. When a card is swiped or used online, Allawee receives the authorization from the card network
+3. Allawee performs pre-checks (card active, customer active, account active, spending controls, balance)
+4. If pre-checks pass, Allawee sends your webhook one of these events:
+   - `card.authorization.request` — Decision needed (check or capture)
+   - `card.authorization.closed` — Authorization finalized (approved/declined)
+   - `card.authorization.update` — Amount changed or reversal
+   - `card.transaction.created` — Settled transaction created
+
+:::caution[Response Time]
+Authorization events with `pending` status require a response within **2 seconds** (4 seconds for updates). After timeout, your `timeoutDefault` setting is applied automatically. Events are sent only once for pending authorizations.
+:::
+
+---
+
+## Event Flow
+
+```
+Card used at merchant
+        │
+        ▼
+  Allawee receives authorization from network
+        │
+        ▼
+  Pre-checks (card active, balance, spending controls)
+        │
+   ┌────┴────┐
+   │ Failed  │ ──► Auto-decline + card.authorization.closed
+   └────┬────┘
+        │ Passed
+        ▼
+  Funds held in reserve
+        │
+        ▼
+  card.authorization.request (type: capture) ──► YOUR WEBHOOK
+        │                                            │
+        │                            ┌───────────────┤
+        │                            │               │
+        ▼                            ▼               ▼
+  card.authorization.closed      approve          decline
+   (final status)
+```
+
+---
+
+## Webhook Setup
+
+Set the webhook URL when creating your card program via the API:
+
+```json
+{
+  "name": "USD Virtual Cards",
+  "network": "mastercard",
+  "type": "virtual",
+  "currency": "USD",
+  "authorization": {
+    "fundingSourceType": "prefunded",
+    "settlementAccount": "act_xxxxx",
+    "webhook": "https://your-server.com/webhooks/card-auth",
+    "timeoutDefault": "decline"
+  }
+}
+```
+
+---
+
+## Verifying Webhook Signatures
+
+Every webhook request includes an `Allawee-Signature` header. Verify it by computing an HMAC-SHA512 hex digest of the raw request body using your webhook signing key.
+
+<Tabs>
+<TabItem label="TypeScript">
+```typescript
+import { createHmac } from "crypto";
+
+const SIGNING_KEY = process.env.ALLAWEE_WEBHOOK_SIGNING_KEY;
+
+function verifySignature(signature: string, rawBody: string): boolean {
+  const hash = createHmac("sha512", SIGNING_KEY)
+    .update(rawBody)
+    .digest("hex");
+  return hash === signature;
+}
+```
+</TabItem>
+<TabItem label="Go">
+```go
+import (
+    "crypto/hmac"
+    "crypto/sha512"
+    "encoding/hex"
+)
+
+func verifySignature(signature string, rawBody []byte, signingKey string) bool {
+    h := hmac.New(sha512.New, []byte(signingKey))
+    h.Write(rawBody)
+    expected := hex.EncodeToString(h.Sum(nil))
+    return expected == signature
+}
+```
+</TabItem>
+</Tabs>
+
+---
+
+## Responding to Authorization Events
+
+Your webhook should return a JSON response with these fields:
+
+| Field | Required | Values | Description |
+|---|---|---|---|
+| `action` | ✓ | `approve`, `decline` | Your authorization decision |
+| `code` | | See codes below | Reason for decline |
+| `cardBalance` | For checks | number | Card balance in minor units (kobo/cents) |
+| `cardHolderName` | For checks | string | Cardholder name |
+| `metadata` | | object | Key-value pairs stored on the authorization |
+
+### Decline Codes
+
+| Code | Description |
+|---|---|
+| `account-not-found` | No wallet/account found for the card |
+| `account-inactive` | Account exists but is inactive |
+| `insufficient-funds` | Balance too low for the transaction |
+| `invalid-transaction` | Transaction doesn't match records |
+| `duplicate-transaction` | Already processed this authorization |
+| `spending-control` | Blocked by spending controls |
+
+---
+
+## Authorization Types
+
+### 1. Check Request (`card.authorization.request` with type `check`)
+
+The card network requests the card balance and cardholder name. You must respond with `cardBalance` and `cardHolderName` if approving.
+
+**Your webhook receives:**
+```json
+{
+  "event": "card.authorization.request",
+  "data": {
+    "id": "c.auth.xxxxx",
+    "card": "c.xxxxx",
+    "type": "check",
+    "amount": 0,
+    "currency": "NGN",
+    "status": "pending",
+    "channel": "online",
+    "networkData": {
+      "network": "verve",
+      "stan": "1678802924287",
+      "rrn": "1678802924287",
+      "cardAcceptorNameLocation": "MATRIX ENERGY LIMITE LA LANG"
+    }
+  },
+  "metadata": {
+    "sentAt": "2025-03-14T18:22:51.000Z",
+    "event": "evt.xxxxx"
+  }
+}
+```
+
+**Approve response:**
+```json
+{
+  "action": "approve",
+  "cardBalance": 5000000,
+  "cardHolderName": "John Doe"
+}
+```
+
+**Decline response:**
+```json
+{
+  "action": "decline",
+  "code": "account-not-found"
+}
+```
+
+---
+
+### 2. Capture Request (`card.authorization.request` with type `capture`)
+
+A purchase authorization. Allawee has already verified the card is active and held funds in reserve. You decide whether to approve or decline the transaction.
+
+**On approve:** Place a lien (reserve) on the user's funds. The transaction is not final until `card.authorization.closed` is received.
+
+**On decline:** Allawee releases the held funds.
+
+**Your webhook receives:**
+```json
+{
+  "event": "card.authorization.request",
+  "data": {
+    "id": "c.auth.xxxxx",
+    "card": "c.xxxxx",
+    "type": "capture",
+    "amount": 50000,
+    "fees": 6500,
+    "currency": "NGN",
+    "status": "pending",
+    "channel": "online",
+    "reserved": true,
+    "networkData": { ... }
+  },
+  "metadata": { ... }
+}
+```
+
+**Approve response:**
+```json
+{ "action": "approve" }
+```
+
+**Steps to process a capture:**
+
+1. Look up the card's wallet/account
+2. Verify the wallet is active
+3. Check for duplicate transactions (use authorization `id` as reference)
+4. Calculate any additional fees you want to charge
+5. Verify sufficient balance: `wallet.availableBalance >= data.amount + data.fees + yourFee`
+6. Check your internal spending controls (optional)
+7. Place a lien (reserve) on the funds
+8. Respond with `{ "action": "approve" }`
+
+---
+
+### 3. Authorization Closed (`card.authorization.closed`)
+
+Sent after an authorization is finalized. The `status` field tells you the outcome.
+
+| Status | Action |
+|---|---|
+| `approved` | Debit the lien — move funds from reserved to settled |
+| `declined` | Release the lien — return reserved funds to available balance |
+
+```json
+{
+  "event": "card.authorization.closed",
+  "data": {
+    "id": "c.auth.xxxxx",
+    "card": "c.xxxxx",
+    "type": "capture",
+    "amount": 50000,
+    "fees": 6500,
+    "currency": "NGN",
+    "status": "approved",
+    "decisionType": "direct-response",
+    "networkData": {
+      "network": "verve",
+      "stan": "1678802924287",
+      "rrn": "1678802924287",
+      "reference": "1678818170917",
+      "cardAcceptorNameLocation": "MATRIX ENERGY LIMITE LA LANG"
+    }
+  },
+  "metadata": {
+    "sentAt": "2025-03-14T18:26:54.528Z",
+    "event": "evt.xxxxx"
+  }
+}
+```
+
+:::note
+`card.authorization.closed` events are retried until you respond with HTTP 200. Implement idempotency using the authorization `id` to handle duplicates.
+:::
+
+---
+
+### 4. Authorization Update (`card.authorization.update`)
+
+Sent when the authorization amount changes or is reversed. Respond within **4 seconds**.
+
+#### Amount Update (status: `pending`)
+
+The network is updating the capture amount. Compare the new amount against the original lien:
+
+- **New amount > original + available balance** → Release lien and decline with `insufficient-funds`
+- **Otherwise** → Debit lien with new amount and approve
+
+#### Reversal (status: `reversed`)
+
+The network reversed the authorization. Credit the reversed amount back to the user.
+
+```json
+{
+  "event": "card.authorization.update",
+  "data": {
+    "id": "c.auth.xxxxx",
+    "card": "c.xxxxx",
+    "type": "capture",
+    "amount": 500,
+    "currency": "NGN",
+    "status": "reversed",
+    "networkData": { ... }
+  },
+  "metadata": { ... }
+}
+```
+
+---
+
+### 5. Transaction Created (`card.transaction.created`)
+
+Sent when a settled transaction is created. This is informational — save it for your records.
+
+```json
+{
+  "event": "card.transaction.created",
+  "data": {
+    "id": "c.txn.xxxxx",
+    "authorization": "c.auth.xxxxx",
+    "card": "c.xxxxx",
+    "customer": "cus.xxxxx",
+    "amount": -50000,
+    "fees": -6500,
+    "currency": "NGN",
+    "channel": "online",
+    "type": "capture",
+    "networkData": {
+      "network": "verve",
+      "stan": "1678802924287",
+      "rrn": "1678802924287",
+      "reference": "1678816769131",
+      "cardAcceptorNameLocation": "MATRIX ENERGY LIMITE LA LANG"
+    }
+  },
+  "metadata": {
+    "sentAt": "2025-03-14T17:59:33.657Z",
+    "event": "evt.xxxxx"
+  }
+}
+```
+
+---
+
+## Complete Implementation Example
+
+<Tabs>
+<TabItem label="TypeScript">
+```typescript
+import { createHmac } from "crypto";
+import express from "express";
+
+const SIGNING_KEY = process.env.ALLAWEE_WEBHOOK_SIGNING_KEY!;
+
+interface AuthorizationData {
+  card: string;
+  type: "check" | "capture";
+  id: string;
+  amount: number;
+  fees: number;
+  channel: string;
+  reserved: boolean;
+  networkData: Record<string, string>;
+  createdAt: string;
+  status: string;
+  declineReason: string;
+  decisionType: string;
+  currency: string;
+}
+
+interface WebhookEvent {
+  event: string;
+  data: AuthorizationData;
+  metadata: { sentAt: string; event: string };
+}
+
+const app = express();
+
+app.post(
+  "/webhooks/card-auth",
+  express.raw({ type: "application/json" }),
+  (req, res) => {
+    const signature = req.headers["allawee-signature"] as string;
+    const rawBody = req.body.toString();
+
+    // Verify signature
+    const hash = createHmac("sha512", SIGNING_KEY)
+      .update(rawBody)
+      .digest("hex");
+    if (hash !== signature) {
+      return res.status(400).json({ error: "Invalid Signature" });
+    }
+
+    const body: WebhookEvent = JSON.parse(rawBody);
+
+    switch (body.event) {
+      case "card.authorization.request":
+        return res.json(processRequest(body));
+
+      case "card.authorization.closed":
+        return res.json(processClosed(body));
+
+      case "card.authorization.update":
+        return res.json(processUpdate(body));
+
+      case "card.transaction.created":
+        // Save transaction to your records
+        return res.json({ code: "success" });
+
+      default:
+        return res.status(400).json({ error: "Unknown event" });
+    }
+  },
+);
+
+function processRequest(body: WebhookEvent) {
+  if (body.data.type === "check") {
+    return processCheck(body);
+  }
+  if (body.data.type === "capture") {
+    return processCapture(body);
+  }
+  return { action: "decline", code: "invalid-transaction" };
+}
+
+function processCheck(body: WebhookEvent) {
+  const wallet = getCardWallet(body.data.card);
+  if (!wallet) {
+    return { action: "decline", code: "account-not-found" };
+  }
+  if (!wallet.active) {
+    return { action: "decline", code: "account-inactive" };
+  }
+  return {
+    action: "approve",
+    cardBalance: wallet.availableBalance,
+    cardHolderName: wallet.name,
+  };
+}
+
+function processCapture(body: WebhookEvent) {
+  const wallet = getCardWallet(body.data.card);
+  if (!wallet) return { action: "decline", code: "account-not-found" };
+  if (!wallet.active) return { action: "decline", code: "account-inactive" };
+
+  // Check for duplicate using authorization ID
+  const existing = getTransaction(body.data.id);
+  if (existing) return { action: "decline", code: "duplicate-transaction" };
+
+  // Calculate your additional fee (optional)
+  const fee = calculateTransactionFee(body.data.amount);
+
+  // Check balance covers amount + network fees + your fee
+  if (wallet.availableBalance < body.data.amount + body.data.fees + fee) {
+    return { action: "decline", code: "insufficient-funds" };
+  }
+
+  // Reserve funds (lien) — transaction is not final until closed
+  placeLien(body, wallet, fee);
+
+  return { action: "approve" };
+}
+
+function processClosed(body: WebhookEvent) {
+  const originalTx = getTransaction(body.data.id);
+  if (!originalTx) return { action: "decline", code: "invalid-transaction" };
+
+  const wallet = getCardWallet(body.data.card);
+  if (!wallet) return { action: "decline", code: "account-not-found" };
+
+  if (body.data.status === "approved") {
+    // Debit the lien — finalize the transaction
+    processDebitLien(body, wallet, originalTx);
+    return { action: "approve" };
+  }
+
+  if (body.data.status === "declined") {
+    // Release the lien — return funds to available balance
+    processReverseLien(body, wallet, originalTx);
+    return { action: "approve" };
+  }
+
+  return { action: "decline", code: "invalid-transaction" };
+}
+
+function processUpdate(body: WebhookEvent) {
+  const originalTx = getTransaction(body.data.id);
+  if (!originalTx) return { action: "decline", code: "invalid-transaction" };
+
+  const wallet = getCardWallet(body.data.card);
+  if (!wallet) return { action: "decline", code: "account-not-found" };
+
+  if (body.data.status === "pending") {
+    // Amount update — compare with original and check balance
+    const fee = calculateTransactionFee(body.data.amount);
+    const newTotal = body.data.amount + body.data.fees + fee;
+    const originalTotal = originalTx.networkAmountAndFees;
+
+    if (newTotal > originalTotal && wallet.availableBalance + originalTotal < newTotal) {
+      processReverseLien(body, wallet, originalTx);
+      return { action: "decline", code: "insufficient-funds" };
+    }
+    processDebitLien(body, wallet, originalTx, fee);
+    return { action: "approve" };
+  }
+
+  if (body.data.status === "reversed") {
+    // Network reversal — refund the user
+    processReverse(body, wallet, originalTx);
+    return { action: "approve" };
+  }
+
+  return { action: "decline", code: "invalid-transaction" };
+}
+
+// --- Placeholder functions (implement with your database/ledger) ---
+
+function getCardWallet(cardId: string) {
+  // Look up card wallet from your database
+  return { active: true, availableBalance: 1000000, name: "John Doe" };
+}
+
+function getTransaction(authorizationId: string) {
+  // Look up existing transaction by authorization ID
+  return null;
+}
+
+function calculateTransactionFee(amount: number): number {
+  // Your fee logic
+  return 0;
+}
+
+function placeLien(body: WebhookEvent, wallet: any, fee: number) {
+  // Reserve funds in wallet
+}
+
+function processDebitLien(body: WebhookEvent, wallet: any, tx: any, fee?: number) {
+  // Finalize debit from lien
+}
+
+function processReverseLien(body: WebhookEvent, wallet: any, tx: any) {
+  // Release lien back to available balance
+}
+
+function processReverse(body: WebhookEvent, wallet: any, tx: any) {
+  // Full reversal of settled transaction
+}
+
+app.listen(3000, () => console.log("Webhook server running on :3000"));
+```
+</TabItem>
+<TabItem label="Go">
+```go
+package main
+
+import (
+    "crypto/hmac"
+    "crypto/sha512"
+    "encoding/hex"
+    "encoding/json"
+    "io"
+    "net/http"
+    "os"
+)
+
+var signingKey = os.Getenv("ALLAWEE_WEBHOOK_SIGNING_KEY")
+
+type WebhookEvent struct {
+    Event    string            `json:"event"`
+    Data     AuthorizationData `json:"data"`
+    Metadata EventMetadata     `json:"metadata"`
+}
+
+type AuthorizationData struct {
+    Card          string                 `json:"card"`
+    Type          string                 `json:"type"`
+    Id            string                 `json:"id"`
+    Amount        int64                  `json:"amount"`
+    Fees          int64                  `json:"fees"`
+    Channel       string                 `json:"channel"`
+    Reserved      bool                   `json:"reserved"`
+    NetworkData   map[string]string      `json:"networkData"`
+    Status        string                 `json:"status"`
+    DeclineReason string                 `json:"declineReason"`
+    DecisionType  string                 `json:"decisionType"`
+    Currency      string                 `json:"currency"`
+}
+
+type EventMetadata struct {
+    SentAt string `json:"sentAt"`
+    Event  string `json:"event"`
+}
+
+func verifySignature(signature string, body []byte) bool {
+    h := hmac.New(sha512.New, []byte(signingKey))
+    h.Write(body)
+    expected := hex.EncodeToString(h.Sum(nil))
+    return expected == signature
+}
+
+func handleWebhook(w http.ResponseWriter, r *http.Request) {
+    body, _ := io.ReadAll(r.Body)
+    signature := r.Header.Get("Allawee-Signature")
+
+    if !verifySignature(signature, body) {
+        http.Error(w, `{"error":"Invalid Signature"}`, http.StatusBadRequest)
+        return
+    }
+
+    var event WebhookEvent
+    if err := json.Unmarshal(body, &event); err != nil {
+        http.Error(w, `{"error":"Invalid Request"}`, http.StatusBadRequest)
+        return
+    }
+
+    var response map[string]interface{}
+
+    switch event.Event {
+    case "card.authorization.request":
+        response = processRequest(&event)
+    case "card.authorization.closed":
+        response = processClosed(&event)
+    case "card.authorization.update":
+        response = processUpdate(&event)
+    case "card.transaction.created":
+        response = map[string]interface{}{"code": "success"}
+    default:
+        http.Error(w, `{"error":"Unknown event"}`, http.StatusBadRequest)
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
+}
+
+func processRequest(event *WebhookEvent) map[string]interface{} {
+    if event.Data.Type == "check" {
+        return processCheck(event)
+    }
+    if event.Data.Type == "capture" {
+        return processCapture(event)
+    }
+    return map[string]interface{}{"action": "decline", "code": "invalid-transaction"}
+}
+
+func processCheck(event *WebhookEvent) map[string]interface{} {
+    wallet := getCardWallet(event.Data.Card)
+    if wallet == nil {
+        return map[string]interface{}{"action": "decline", "code": "account-not-found"}
+    }
+    if !wallet.Active {
+        return map[string]interface{}{"action": "decline", "code": "account-inactive"}
+    }
+    return map[string]interface{}{
+        "action":         "approve",
+        "cardBalance":    wallet.AvailableBalance,
+        "cardHolderName": wallet.Name,
+    }
+}
+
+func processCapture(event *WebhookEvent) map[string]interface{} {
+    wallet := getCardWallet(event.Data.Card)
+    if wallet == nil {
+        return map[string]interface{}{"action": "decline", "code": "account-not-found"}
+    }
+    if !wallet.Active {
+        return map[string]interface{}{"action": "decline", "code": "account-inactive"}
+    }
+
+    existing := getTransaction(event.Data.Id)
+    if existing != nil {
+        return map[string]interface{}{"action": "decline", "code": "duplicate-transaction"}
+    }
+
+    fee := calculateTransactionFee(event.Data.Amount)
+
+    if wallet.AvailableBalance < (event.Data.Amount + event.Data.Fees + fee) {
+        return map[string]interface{}{"action": "decline", "code": "insufficient-funds"}
+    }
+
+    placeLien(event, wallet, fee)
+
+    return map[string]interface{}{"action": "approve"}
+}
+
+func processClosed(event *WebhookEvent) map[string]interface{} {
+    originalTx := getTransaction(event.Data.Id)
+    if originalTx == nil {
+        return map[string]interface{}{"action": "decline", "code": "invalid-transaction"}
+    }
+    wallet := getCardWallet(event.Data.Card)
+    if wallet == nil {
+        return map[string]interface{}{"action": "decline", "code": "account-not-found"}
+    }
+
+    if event.Data.Status == "approved" {
+        processDebitLien(event, wallet, originalTx)
+        return map[string]interface{}{"action": "approve"}
+    }
+    if event.Data.Status == "declined" {
+        processReverseLien(event, wallet, originalTx)
+        return map[string]interface{}{"action": "approve"}
+    }
+    return map[string]interface{}{"action": "decline", "code": "invalid-transaction"}
+}
+
+func processUpdate(event *WebhookEvent) map[string]interface{} {
+    originalTx := getTransaction(event.Data.Id)
+    if originalTx == nil {
+        return map[string]interface{}{"action": "decline", "code": "invalid-transaction"}
+    }
+    wallet := getCardWallet(event.Data.Card)
+    if wallet == nil {
+        return map[string]interface{}{"action": "decline", "code": "account-not-found"}
+    }
+
+    if event.Data.Status == "pending" {
+        fee := calculateTransactionFee(event.Data.Amount)
+        newTotal := event.Data.Amount + event.Data.Fees + fee
+
+        if newTotal > originalTx.NetworkAmountAndFees &&
+            (wallet.AvailableBalance+originalTx.NetworkAmountAndFees) < newTotal {
+            processReverseLien(event, wallet, originalTx)
+            return map[string]interface{}{"action": "decline", "code": "insufficient-funds"}
+        }
+        processDebitLien(event, wallet, originalTx)
+        return map[string]interface{}{"action": "approve"}
+    }
+
+    if event.Data.Status == "reversed" {
+        processReverse(event, wallet, originalTx)
+        return map[string]interface{}{"action": "approve"}
+    }
+
+    return map[string]interface{}{"action": "decline", "code": "invalid-transaction"}
+}
+
+// --- Placeholder types and functions ---
+
+type Wallet struct {
+    Active           bool
+    AvailableBalance int64
+    Name             string
+}
+
+type Transaction struct {
+    Status                string
+    NetworkAmountAndFees  int64
+}
+
+func getCardWallet(cardId string) *Wallet          { return nil }
+func getTransaction(authId string) *Transaction     { return nil }
+func calculateTransactionFee(amount int64) int64    { return 0 }
+func placeLien(e *WebhookEvent, w *Wallet, fee int64) {}
+func processDebitLien(e *WebhookEvent, w *Wallet, tx *Transaction) {}
+func processReverseLien(e *WebhookEvent, w *Wallet, tx *Transaction) {}
+func processReverse(e *WebhookEvent, w *Wallet, tx *Transaction) {}
+
+func main() {
+    http.HandleFunc("/webhooks/card-auth", handleWebhook)
+    http.ListenAndServe(":3000", nil)
+}
+```
+</TabItem>
+</Tabs>
+
+---
+
+## Testing with Simulation
+
+Use the [simulation endpoints](/sandbox/) in test mode to trigger authorization events:
+
+```bash
+# Simulate a balance check
+POST /simulation/cards/:id/request-authorization/check
+
+# Simulate a capture
+POST /simulation/cards/:id/request-authorization/capture
+
+# Simulate a capture amount update
+POST /simulation/cards/:id/request-authorization/update-capture
+
+# Simulate a reversal
+POST /simulation/cards/:id/request-authorization/reverse-capture
+```
+
+---
+
+## Important Notes
+
+- **Pending events are sent once only.** If you don't respond in time, the `timeoutDefault` from your card program is applied.
+- **Closed/reversed events are retried** until you return HTTP 200. Implement idempotency by tracking the authorization `id`.
+- **All amounts are in minor units** — kobo for NGN (₦100 = 10000), cents for USD ($100 = 10000).
+- **Network fees** (`data.fees`) are Allawee's network processing fees, separate from any fees you charge.
+- The `decisionType` field indicates whether the decision was `direct-response` (your webhook) or `system-response` (Allawee auto-decision from pre-checks or timeout).

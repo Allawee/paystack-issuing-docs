@@ -1,0 +1,71 @@
+---
+title: Fees
+description: Create and manage fee structures for transactions.
+---
+
+Fees define charges applied to transactions. They can be flat amounts or percentage-based with optional caps.
+
+---
+
+## Create Fee
+
+```http
+POST /fees
+```
+
+### Request Body
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | ✓ | Fee name |
+| `description` | string | | Fee description |
+| `structure` | string | ✓ | `flat` or `percentage` |
+| `currency` | string | | Fee currency |
+| `value` | number | ✓ | Fee value (amount for flat, basis points for percentage) |
+| `cap` | number | | Maximum fee amount (for percentage fees) |
+| `account` | string | ✓ | Account to receive the fee |
+| `metadata` | object | | Custom key-value data |
+
+### Example Request (Flat Fee)
+
+```json
+{
+  "name": "Transfer Fee",
+  "structure": "flat",
+  "currency": "NGN",
+  "value": 5000,
+  "account": "act_xxxxx"
+}
+```
+
+### Example Request (Percentage Fee)
+
+```json
+{
+  "name": "Transaction Fee",
+  "structure": "percentage",
+  "value": 150,
+  "cap": 200000,
+  "account": "act_xxxxx"
+}
+```
+
+---
+
+## List Fees
+
+```http
+GET /fees
+```
+
+Standard [pagination](/getting-started/#pagination) parameters apply.
+
+---
+
+## Get Fee
+
+```http
+GET /fees/:id
+```
+
+Returns a single fee by ID.

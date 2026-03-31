@@ -1,0 +1,10 @@
+:root {
+	--sl-color-accent-low: #1a1a2e;
+	--sl-color-accent: #3b82f6;
+	--sl-color-accent-high: #93c5fd;
+}
+
+/* Improve code block styling for API endpoint display */
+pre:has(code.language-http) {
+	border-left: 3px solid var(--sl-color-accent);
+}

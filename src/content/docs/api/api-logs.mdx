@@ -1,0 +1,26 @@
+---
+title: API Logs
+description: View API request logs for debugging and auditing.
+---
+
+API logs (requests) provide a record of all API calls made to your account. Use these for debugging and auditing.
+
+---
+
+## List Requests
+
+```http
+GET /requests
+```
+
+Standard [pagination, filtering, and sorting](/getting-started/#pagination) parameters apply.
+
+---
+
+## Get Request
+
+```http
+GET /requests/:id
+```
+
+Returns a single API request log by ID, including the request and response details.

@@ -1,0 +1,251 @@
+---
+title: Pagination & Query Language
+description: Filter, sort, paginate, select, and expand resources using Allawee's compact query language.
+---
+
+All list endpoints support a powerful query language for filtering, sorting, cursor-based pagination, field selection, and relation expansion — all via URL query parameters.
+
+## Quick Start
+
+Fetch the first page of customers with filters, selection, and sorting:
+
+```bash
+curl -G 'https://api.allawee.com/customers' \
+  --data-urlencode 'filter=email:john@doe.com createdAt|gtd|2024-01-01T00:00:00.000Z' \
+  --data-urlencode 'select=id name email' \
+  --data-urlencode 'sort=-createdAt' \
+  --data-urlencode 'limit=20' \
+  --data-urlencode 'countTotal'
+```
+
+Paginate forward using `after` (pass the last `id` from the previous page):
+
+```bash
+curl -G 'https://api.allawee.com/customers' \
+  --data-urlencode 'filter=email~doe' \
+  --data-urlencode 'after=cus_2x9abc' \
+  --data-urlencode 'limit=20'
+```
+
+---
+
+## Query Parameters
+
+| Parameter | Type | Description |
+|---|---|---|
+| `limit` | number | Items per page. Default: `20` |
+| `sort` | string | Space-separated fields. Prefix `-` for descending |
+| `select` | string | Space-separated fields to include. Prefix `-` to exclude |
+| `expand` | string | Space-separated relation paths. Use `:` for sub-field selection |
+| `filter` | string | Space-separated filter expressions (see below) |
+| `or` | string | Filters combined with OR logic |
+| `nor` | string | Filters combined with NOR logic |
+| `and` | string | Filters combined with AND logic |
+| `before` | string | Cursor ID — fetch items before this ID (backward) |
+| `after` | string | Cursor ID — fetch items after this ID (forward) |
+| `countTotal` | boolean | Include total count in response. Short form `&countTotal` is valid |
+
+---
+
+## Filter Language
+
+Filters are space-separated expressions. Each expression can use **long form** (`field|operator|value`) or **shorthand** syntax.
+
+### Operators
+
+| Operator | Long Form | Shorthand | Description |
+|---|---|---|---|
+| `eq` | `field\|eq\|value` | `field:value` or `field=value` | Equals |
+| `ne` | `field\|ne\|value` | `-field:value` or `field!=value` | Not equals |
+| `gt` | `field\|gt\|N` | `field>N` | Greater than |
+| `gte` | `field\|gte\|N` | `field>=N` | Greater than or equal |
+| `lt` | `field\|lt\|N` | `field<N` | Less than |
+| `lte` | `field\|lte\|N` | `field<=N` | Less than or equal |
+| `like` | `field\|like\|text` | `field~text` | Case-insensitive regex match |
+| `nlike` | `field\|nlike\|text` | `-field~text` | Not match |
+| `in` | `field\|in\|a,b,c` | — | Value in list |
+| `nin` | `field\|nin\|a,b,c` | — | Value not in list |
+| `all` | `field\|all\|a,b,c` | — | Array contains all values |
+| `size` | `field\|size\|N` | — | Array size equals N |
+| `nsize` | `field\|nsize\|N` | — | Array size not N |
+| `exists` | `field\|exists\|true` | — | Field exists |
+
+Numbers are parsed automatically; non-numeric values remain strings.
+
+### Date Operators
+
+For date fields like `createdAt`, `updatedAt`, `txTime`, `date`:
+
+| Operator | Description |
+|---|---|
+| `gtd` | Greater than date |
+| `gted` | Greater than or equal date |
+| `ltd` | Less than date |
+| `lted` | Less than or equal date |
+
+```bash
+# Transactions in January 2024
+filter=createdAt|gtd|2024-01-01T00:00:00.000Z createdAt|ltd|2024-01-31T23:59:59.999Z
+```
+
+### Quoting Values with Spaces
+
+Wrap values containing spaces in quotes or angle brackets:
+
+```
+filter=name:"John Doe"
+filter=name:<John Doe>
+```
+
+Escape quotes inside with a backslash: `name:"John \"JD\" Doe"`
+
+### Identifier Fields
+
+Filter by resource identifiers using dot notation for nested IDs:
+
+```bash
+filter=customer|eq|cus_abc123
+filter=customer.id|eq|cus_xyz123
+filter=account|in|acc_1,acc_2,acc_3
+```
+
+### Grouping with OR / NOR / AND
+
+Use separate query parameters to combine filter groups:
+
+```bash
+?filter=state:active amount>1000&or=country:NG country:GH&nor=channel:manual&and=verified:true
+```
+
+Each parameter uses the same space-separated grammar and maps to `$or`, `$nor`, and `$and` blocks internally.
+
+---
+
+## Select
+
+Space-separated list of fields to include or exclude (prefix `-` to exclude). Depth is limited to 1 by default.
+
+```bash
+# Include only these fields
+select=id name email
+
+# Exclude a field
+select=id name -secret source
+```
+
+---
+
+## Expand (Include Related Resources)
+
+Populate related resources. Use `:` to specify which sub-fields to include.
+
+```bash
+# Expand with sub-field selection
+expand=user:firstName,email posts:title,createdAt
+
+# Nested expansion (max depth 2)
+expand=posts.author:firstName
+```
+
+Multiple selects for the same path are merged automatically.
+
+---
+
+## Sorting
+
+Space-separated field list. Prefix `-` for descending order.
+
+```bash
+sort=-createdAt          # Newest first (default)
+sort=createdAt           # Oldest first
+sort=-createdAt amount   # Newest first, then by amount ascending
+```
+
+---
+
+## Pagination (Cursor-Based)
+
+Allawee uses cursor-based pagination for consistent results.
+
+| Parameter | Description |
+|---|---|
+| `after` | Fetch items after this ID (forward pagination) |
+| `before` | Fetch items before this ID (backward pagination) |
+| `limit` | Page size (default: 20) |
+
+### Response Shape
+
+```json
+{
+  "data": [
+    { "id": "cus_abc123", "name": "John Doe", "email": "john@doe.com" }
+  ],
+  "metadata": {
+    "hasMore": true,
+    "totalCount": 128
+  }
+}
+```
+
+- `hasMore` is `true` when the page returns exactly `limit` items
+- `totalCount` is only present when `countTotal` is requested
+
+### Pagination Example
+
+```bash
+# First page
+curl 'https://api.allawee.com/cards?limit=10&sort=-createdAt'
+
+# Next page (use last ID from previous response)
+curl 'https://api.allawee.com/cards?limit=10&sort=-createdAt&after=c_lastIdHere'
+
+# Previous page
+curl 'https://api.allawee.com/cards?limit=10&sort=-createdAt&before=c_firstIdHere'
+```
+
+---
+
+## End-to-End Examples
+
+### Filtering cards by status and date range
+
+```bash
+GET /cards?filter=status:active createdAt|gtd|2024-01-01T00:00:00.000Z&limit=50
+```
+
+### Searching customers with OR logic
+
+```bash
+GET /customers?filter=name~john&or=email~john phone~john
+```
+
+### Fetching payment logs with field selection
+
+```bash
+GET /requests?filter=method|eq|POST path|eq|/card-programs&select=path method initiator&countTotal
+```
+
+### Expanding related resources on cards
+
+```bash
+GET /cards?expand=customer:name,email program:name,network&select=id status customer program
+```
+
+### Filtering transactions by amount range
+
+```bash
+GET /card-transactions?filter=amount>100000 amount<5000000&sort=-createdAt&limit=20
+```
+
+---
+
+## Error Handling
+
+Invalid filter format returns HTTP 400:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Incorrect format for 'filter' parameter."
+}
+```
