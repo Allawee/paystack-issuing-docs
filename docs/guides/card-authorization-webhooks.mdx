@@ -79,7 +79,8 @@ Set the webhook URL when creating your card program via the API:
 
 Every webhook request includes an `Allawee-Signature` header. Verify it by computing an HMAC-SHA512 hex digest of the raw request body using your webhook signing key.
 
-**TypeScript**
+::::scalar-tabs
+:::scalar-tab{ title="TypeScript" }
 
 ```typescript
 import { createHmac } from "crypto";
@@ -94,7 +95,8 @@ function verifySignature(signature: string, rawBody: string): boolean {
 }
 ```
 
-**Go**
+:::
+:::scalar-tab{ title="Go" }
 
 ```go
 import (
@@ -110,6 +112,9 @@ func verifySignature(signature string, rawBody []byte, signingKey string) bool {
     return expected == signature
 }
 ```
+
+:::
+::::
 
 ---
 
@@ -346,7 +351,9 @@ Sent when a settled transaction is created. This is informational — save it fo
 
 ## Complete Implementation Example
 
-**TypeScript**
+::::scalar-tabs
+:::scalar-tab{ title="TypeScript" }
+
 ```typescript
 import { createHmac } from "crypto";
 import express from "express";
@@ -550,7 +557,8 @@ function processReverse(body: WebhookEvent, wallet: any, tx: any) {
 app.listen(3000, () => console.log("Webhook server running on :3000"));
 ```
 
-**Go**
+:::
+:::scalar-tab{ title="Go" }
 ```go
 package main
 
@@ -762,6 +770,9 @@ func main() {
     http.ListenAndServe(":3000", nil)
 }
 ```
+
+:::
+::::
 
 ---
 
