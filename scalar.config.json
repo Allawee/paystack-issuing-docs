@@ -7,7 +7,7 @@
   },
   "assetsDir": "assets",
   "siteConfig": {
-    "logo": "/paystack-issuing.svg",
+    "logo": "assets/paystack-issuing.svg",
     "colorScheme": {
       "default": "system",
       "showToggle": true
