@@ -14,14 +14,3 @@ jobs:
 
       - name: Publish to Scalar
         run: npx @scalar/cli@latest project publish --token ${{ secrets.SCALAR_API_TOKEN }}
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
