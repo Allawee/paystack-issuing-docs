@@ -31,6 +31,21 @@
           "newTab": true
         }
       ],
+      "sidebar": [
+        { "title": "Overview", "path": "/" },
+        { "title": "Getting Started", "path": "/getting-started" },
+        { "title": "Dashboard", "path": "/dashboard" },
+        { "title": "Sandbox & Testing", "path": "/sandbox" },
+        {
+          "title": "Guides",
+          "children": [
+            { "title": "Pagination & Filtering", "path": "/guides/pagination-and-filtering" },
+            { "title": "Card Authorization Webhooks", "path": "/guides/card-authorization-webhooks" },
+            { "title": "Guaranteed Request Processing", "path": "/guides/guaranteed-request-processing" }
+          ]
+        },
+        { "title": "API Reference", "path": "/api" }
+      ],
       "routes": {
         "/": {
           "type": "page",
