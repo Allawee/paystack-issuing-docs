@@ -1,49 +1,37 @@
-# Starlight Starter Kit: Basics
+# Paystack Issuing Docs
 
-[![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
+Documentation for the Paystack Issuing platform, powered by [Scalar Docs](https://scalar.com/products/docs/getting-started).
 
-```
-npm create astro@latest -- --template starlight
-```
-
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-## 🚀 Project Structure
-
-Inside of your Astro + Starlight project, you'll see the following folders and files:
+## Project Structure
 
 ```
 .
-├── public/
-├── src/
-│   ├── assets/
-│   ├── content/
-│   │   └── docs/
-│   └── content.config.ts
-├── astro.config.mjs
-├── package.json
-└── tsconfig.json
+├── docs/
+│   ├── index.mdx
+│   ├── getting-started.mdx
+│   ├── dashboard.mdx
+│   ├── sandbox.mdx
+│   └── guides/
+│       ├── pagination-and-filtering.mdx
+│       ├── card-authorization-webhooks.mdx
+│       └── guaranteed-request-processing.mdx
+└── scalar.config.json
 ```
 
-Starlight looks for `.md` or `.mdx` files in the `src/content/docs/` directory. Each file is exposed as a route based on its file name.
+Content lives in `docs/` as Markdown/MDX files. Navigation and site configuration are defined in `scalar.config.json`. The API reference is auto-generated from the live OpenAPI spec at `https://api.allawee.com/openapi.json`.
 
-Images can be added to `src/assets/` and embedded in Markdown with a relative link.
+## Deployment
 
-Static assets, like favicons, can be placed in the `public/` directory.
+The site is published to Scalar Docs on every push to `main` via GitHub Actions. The workflow uses the Scalar CLI and requires a `SCALAR_API_TOKEN` secret set in the repository settings.
 
-## 🧞 Commands
+To publish manually:
 
-All commands are run from the root of the project, from a terminal:
+```bash
+npx @scalar/cli@latest project publish --token <your-token>
+```
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+## Adding content
 
-## 👀 Want to learn more?
-
-Check out [Starlight’s docs](https://starlight.astro.build/), read [the Astro documentation](https://docs.astro.build), or jump into the [Astro Discord server](https://astro.build/chat).
+- **New page** — create a `.mdx` file in `docs/` and add a `"type": "page"` route entry in `scalar.config.json`
+- **New guide** — create a `.mdx` file in `docs/guides/` and add it under the `"/guides"` group in `scalar.config.json`
+- **API reference** — automatically sourced from `https://api.allawee.com/openapi.json`, no manual changes needed

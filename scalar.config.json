@@ -1,0 +1,65 @@
+{
+  "$schema": "https://registry.scalar.com/@scalar/schemas/config",
+  "scalar": "2.0.0",
+  "info": {
+    "title": "Paystack Issuing",
+    "description": "Financial infrastructure for card issuing, accounts, payments, and more."
+  },
+  "navigation": {
+    "routes": {
+      "/": {
+        "type": "page",
+        "title": "Overview",
+        "filepath": "docs/index.mdx"
+      },
+      "/getting-started": {
+        "type": "page",
+        "title": "Getting Started",
+        "filepath": "docs/getting-started.mdx"
+      },
+      "/dashboard": {
+        "type": "page",
+        "title": "Dashboard",
+        "filepath": "docs/dashboard.mdx"
+      },
+      "/sandbox": {
+        "type": "page",
+        "title": "Sandbox & Testing",
+        "filepath": "docs/sandbox.mdx"
+      },
+      "/guides": {
+        "type": "group",
+        "title": "Guides",
+        "mode": "flat",
+        "children": {
+          "/pagination-and-filtering": {
+            "type": "page",
+            "title": "Pagination & Filtering",
+            "filepath": "docs/guides/pagination-and-filtering.mdx"
+          },
+          "/card-authorization-webhooks": {
+            "type": "page",
+            "title": "Card Authorization Webhooks",
+            "filepath": "docs/guides/card-authorization-webhooks.mdx"
+          },
+          "/guaranteed-request-processing": {
+            "type": "page",
+            "title": "Guaranteed Request Processing",
+            "filepath": "docs/guides/guaranteed-request-processing.mdx"
+          }
+        }
+      },
+      "/api": {
+        "type": "openapi",
+        "title": "API Reference",
+        "url": "https://api.allawee.com/openapi.json",
+        "mode": "nested",
+        "config": {
+          "authentication": {
+            "preferredSecurityScheme": "bearer"
+          }
+        }
+      }
+    }
+  }
+}
