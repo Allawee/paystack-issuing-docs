@@ -11,6 +11,11 @@
     "colorScheme": {
       "default": "light",
       "showToggle": true
+    },
+    "head": {
+      "styles": [
+        { "path": "assets/custom.css" }
+      ]
     }
   },
   "navigation": {

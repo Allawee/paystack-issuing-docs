@@ -1,0 +1,5 @@
+/* Make header Register button Paystack blue */
+.scalar-button-solid {
+  background-color: var(--scalar-color-accent);
+  color: white;
+}
