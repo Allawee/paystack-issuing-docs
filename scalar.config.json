@@ -32,59 +32,65 @@
     ],
     "routes": {
       "/": {
-        "type": "page",
-        "title": "Overview",
-        "filepath": "docs/index.mdx",
-        "layout": {
-          "toc": false,
-          "pageTitle": false
-        }
-      },
-      "/getting-started": {
-        "type": "page",
-        "title": "Getting Started",
-        "filepath": "docs/getting-started.mdx"
-      },
-      "/dashboard": {
-        "type": "page",
-        "title": "Dashboard",
-        "filepath": "docs/dashboard.mdx"
-      },
-      "/sandbox": {
-        "type": "page",
-        "title": "Sandbox & Testing",
-        "filepath": "docs/sandbox.mdx"
-      },
-      "/guides": {
         "type": "group",
-        "title": "Guides",
-        "mode": "flat",
+        "title": "Paystack Issuing",
         "children": {
-          "/pagination-and-filtering": {
+          "/": {
             "type": "page",
-            "title": "Pagination & Filtering",
-            "filepath": "docs/guides/pagination-and-filtering.mdx"
+            "title": "Overview",
+            "filepath": "docs/index.mdx",
+            "layout": {
+              "toc": false,
+              "pageTitle": false
+            }
           },
-          "/card-authorization-webhooks": {
+          "/getting-started": {
             "type": "page",
-            "title": "Card Authorization Webhooks",
-            "filepath": "docs/guides/card-authorization-webhooks.mdx"
+            "title": "Getting Started",
+            "filepath": "docs/getting-started.mdx"
           },
-          "/guaranteed-request-processing": {
+          "/dashboard": {
             "type": "page",
-            "title": "Guaranteed Request Processing",
-            "filepath": "docs/guides/guaranteed-request-processing.mdx"
-          }
-        }
-      },
-      "/api": {
-        "type": "openapi",
-        "title": "API Reference",
-        "url": "https://api.allawee.com/openapi.json",
-        "mode": "nested",
-        "config": {
-          "authentication": {
-            "preferredSecurityScheme": "bearer"
+            "title": "Dashboard",
+            "filepath": "docs/dashboard.mdx"
+          },
+          "/sandbox": {
+            "type": "page",
+            "title": "Sandbox & Testing",
+            "filepath": "docs/sandbox.mdx"
+          },
+          "/guides": {
+            "type": "group",
+            "title": "Guides",
+            "mode": "flat",
+            "children": {
+              "/pagination-and-filtering": {
+                "type": "page",
+                "title": "Pagination & Filtering",
+                "filepath": "docs/guides/pagination-and-filtering.mdx"
+              },
+              "/card-authorization-webhooks": {
+                "type": "page",
+                "title": "Card Authorization Webhooks",
+                "filepath": "docs/guides/card-authorization-webhooks.mdx"
+              },
+              "/guaranteed-request-processing": {
+                "type": "page",
+                "title": "Guaranteed Request Processing",
+                "filepath": "docs/guides/guaranteed-request-processing.mdx"
+              }
+            }
+          },
+          "/api": {
+            "type": "openapi",
+            "title": "API Reference",
+            "url": "https://api.allawee.com/openapi.json",
+            "mode": "nested",
+            "config": {
+              "authentication": {
+                "preferredSecurityScheme": "bearer"
+              }
+            }
           }
         }
       }
