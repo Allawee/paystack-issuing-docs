@@ -3,7 +3,7 @@ title: Guaranteed Request Processing (GRP)
 description: Build resilient integrations using GRP to handle transient failures gracefully.
 ---
 
-
+# Guaranteed Request Processing (GRP)
 
 Guaranteed Request Processing (GRP) is a resilience mechanism that queues requests automatically when a downstream service is temporarily unavailable, instead of failing immediately. When GRP is enabled and a service is unreachable, the API returns **HTTP 202 Accepted** with a request ID — and processes the request asynchronously once the service recovers.
 
