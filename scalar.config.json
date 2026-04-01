@@ -9,7 +9,7 @@
   "siteConfig": {
     "logo": "assets/paystack-issuing.svg",
     "colorScheme": {
-      "default": "system",
+      "default": "light",
       "showToggle": true
     }
   },
