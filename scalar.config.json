@@ -10,7 +10,11 @@
       "/": {
         "type": "page",
         "title": "Overview",
-        "filepath": "docs/index.mdx"
+        "filepath": "docs/index.mdx",
+        "layout": {
+          "toc": false,
+          "pageTitle": false
+        }
       },
       "/getting-started": {
         "type": "page",
