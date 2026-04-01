@@ -3,7 +3,7 @@ title: Guaranteed Request Processing (GRP)
 description: Build resilient integrations using GRP to handle transient failures gracefully.
 ---
 
-import { Steps } from '@astrojs/starlight/components';
+
 
 Guaranteed Request Processing (GRP) is a resilience mechanism that queues requests automatically when a downstream service is temporarily unavailable, instead of failing immediately. When GRP is enabled and a service is unreachable, the API returns **HTTP 202 Accepted** with a request ID — and processes the request asynchronously once the service recovers.
 
@@ -15,14 +15,12 @@ Enable GRP for critical operations (card creation, card linking, card blocking) 
 
 ## How It Works
 
-<Steps>
 1. **Send a request** with a GRP-enabled API key
 2. If the downstream service is available, you get the normal response immediately
 3. If the service is temporarily unavailable, you receive a **202 Accepted** response with an `x-request-id` header
 4. The API queues your request and retries automatically
 5. Once processed, you receive a `request.completed` webhook event
 6. You can also poll for status at any time using the request ID
-</Steps>
 
 ```
 Normal flow:

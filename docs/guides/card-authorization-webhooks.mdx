@@ -3,7 +3,7 @@ title: Card Authorization Webhooks
 description: Implement a webhook endpoint to handle real-time card authorization requests from Allawee.
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
+
 
 When a card is used at a merchant, Allawee processes the authorization request and sends it to your webhook for a decision. Your endpoint must respond within **2 seconds** with an `approve` or `decline` action — otherwise Allawee applies your card program's `timeoutDefault` response.
 
@@ -79,8 +79,8 @@ Set the webhook URL when creating your card program via the API:
 
 Every webhook request includes an `Allawee-Signature` header. Verify it by computing an HMAC-SHA512 hex digest of the raw request body using your webhook signing key.
 
-<Tabs>
-<TabItem label="TypeScript">
+**TypeScript**
+
 ```typescript
 import { createHmac } from "crypto";
 
@@ -93,8 +93,9 @@ function verifySignature(signature: string, rawBody: string): boolean {
   return hash === signature;
 }
 ```
-</TabItem>
-<TabItem label="Go">
+
+**Go**
+
 ```go
 import (
     "crypto/hmac"
@@ -109,8 +110,6 @@ func verifySignature(signature string, rawBody []byte, signingKey string) bool {
     return expected == signature
 }
 ```
-</TabItem>
-</Tabs>
 
 ---
 
