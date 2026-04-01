@@ -14,7 +14,7 @@
     }
   },
   "versions": {
-    "v1": {
+    "default": {
       "header": [
         {
           "type": "link",
