@@ -13,95 +13,78 @@
       "showToggle": true
     }
   },
-  "versions": {
-    "default": {
-      "header": [
-        {
-          "type": "link",
-          "title": "Log in",
-          "to": "https://infra.allawee.com",
-          "style": "text",
-          "newTab": true
-        },
-        {
-          "type": "link",
-          "title": "Register",
-          "to": "https://infra.allawee.com/signup",
-          "style": "button",
-          "newTab": true
+  "navigation": {
+    "header": [
+      {
+        "type": "link",
+        "title": "Log in",
+        "to": "https://infra.allawee.com",
+        "style": "text",
+        "newTab": true
+      },
+      {
+        "type": "link",
+        "title": "Register",
+        "to": "https://infra.allawee.com/signup",
+        "style": "button",
+        "newTab": true
+      }
+    ],
+    "routes": {
+      "/": {
+        "type": "page",
+        "title": "Overview",
+        "filepath": "docs/index.mdx",
+        "layout": {
+          "toc": false,
+          "pageTitle": false
         }
-      ],
-      "sidebar": [
-        { "title": "Overview", "path": "/" },
-        { "title": "Getting Started", "path": "/getting-started" },
-        { "title": "Dashboard", "path": "/dashboard" },
-        { "title": "Sandbox & Testing", "path": "/sandbox" },
-        {
-          "title": "Guides",
-          "children": [
-            { "title": "Pagination & Filtering", "path": "/guides/pagination-and-filtering" },
-            { "title": "Card Authorization Webhooks", "path": "/guides/card-authorization-webhooks" },
-            { "title": "Guaranteed Request Processing", "path": "/guides/guaranteed-request-processing" }
-          ]
-        },
-        { "title": "API Reference", "path": "/api" }
-      ],
-      "routes": {
-        "/": {
-          "type": "page",
-          "title": "Overview",
-          "filepath": "docs/index.mdx",
-          "layout": {
-            "toc": false,
-            "pageTitle": false
+      },
+      "/getting-started": {
+        "type": "page",
+        "title": "Getting Started",
+        "filepath": "docs/getting-started.mdx"
+      },
+      "/dashboard": {
+        "type": "page",
+        "title": "Dashboard",
+        "filepath": "docs/dashboard.mdx"
+      },
+      "/sandbox": {
+        "type": "page",
+        "title": "Sandbox & Testing",
+        "filepath": "docs/sandbox.mdx"
+      },
+      "/guides": {
+        "type": "group",
+        "title": "Guides",
+        "mode": "flat",
+        "children": {
+          "/pagination-and-filtering": {
+            "type": "page",
+            "title": "Pagination & Filtering",
+            "filepath": "docs/guides/pagination-and-filtering.mdx"
+          },
+          "/card-authorization-webhooks": {
+            "type": "page",
+            "title": "Card Authorization Webhooks",
+            "filepath": "docs/guides/card-authorization-webhooks.mdx"
+          },
+          "/guaranteed-request-processing": {
+            "type": "page",
+            "title": "Guaranteed Request Processing",
+            "filepath": "docs/guides/guaranteed-request-processing.mdx"
           }
-        },
-        "/getting-started": {
-          "type": "page",
-          "title": "Getting Started",
-          "filepath": "docs/getting-started.mdx"
-        },
-        "/dashboard": {
-          "type": "page",
-          "title": "Dashboard",
-          "filepath": "docs/dashboard.mdx"
-        },
-        "/sandbox": {
-          "type": "page",
-          "title": "Sandbox & Testing",
-          "filepath": "docs/sandbox.mdx"
-        },
-        "/guides": {
-          "type": "group",
-          "title": "Guides",
-          "mode": "flat",
-          "children": {
-            "/pagination-and-filtering": {
-              "type": "page",
-              "title": "Pagination & Filtering",
-              "filepath": "docs/guides/pagination-and-filtering.mdx"
-            },
-            "/card-authorization-webhooks": {
-              "type": "page",
-              "title": "Card Authorization Webhooks",
-              "filepath": "docs/guides/card-authorization-webhooks.mdx"
-            },
-            "/guaranteed-request-processing": {
-              "type": "page",
-              "title": "Guaranteed Request Processing",
-              "filepath": "docs/guides/guaranteed-request-processing.mdx"
-            }
-          }
-        },
-        "/api": {
-          "type": "openapi",
-          "title": "API Reference",
-          "url": "https://api.allawee.com/openapi.json",
-          "mode": "nested",
-          "config": {
-            "authentication": {
-              "preferredSecurityScheme": "bearer"
-            }
+        }
+      },
+      "/api": {
+        "type": "openapi",
+        "title": "API Reference",
+        "url": "https://api.allawee.com/openapi.json",
+        "mode": "nested",
+        "config": {
+          "authentication": {
+            "preferredSecurityScheme": "bearer"
           }
         }
       }
