@@ -1,5 +1,13 @@
-/* Make header Register button Paystack blue */
-.scalar-button-solid {
-  background-color: var(--scalar-color-accent);
-  color: white;
+/* Override Scalar accent and button color to Paystack blue */
+.light-mode {
+  --scalar-color-accent: #00C3F7;
+  --scalar-button-1: #00C3F7;
+  --scalar-button-1-hover: #00a8d6;
+  --scalar-button-1-color: #fff;
+}
+.dark-mode {
+  --scalar-color-accent: #00C3F7;
+  --scalar-button-1: #00C3F7;
+  --scalar-button-1-hover: #00a8d6;
+  --scalar-button-1-color: #fff;
 }
