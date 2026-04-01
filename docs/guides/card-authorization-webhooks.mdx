@@ -346,8 +346,7 @@ Sent when a settled transaction is created. This is informational — save it fo
 
 ## Complete Implementation Example
 
-<Tabs>
-<TabItem label="TypeScript">
+**TypeScript**
 ```typescript
 import { createHmac } from "crypto";
 import express from "express";
@@ -550,8 +549,8 @@ function processReverse(body: WebhookEvent, wallet: any, tx: any) {
 
 app.listen(3000, () => console.log("Webhook server running on :3000"));
 ```
-</TabItem>
-<TabItem label="Go">
+
+**Go**
 ```go
 package main
 
@@ -763,8 +762,6 @@ func main() {
     http.ListenAndServe(":3000", nil)
 }
 ```
-</TabItem>
-</Tabs>
 
 ---
 
